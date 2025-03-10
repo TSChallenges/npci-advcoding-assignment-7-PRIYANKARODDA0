@@ -2,87 +2,80 @@ package com.mystore.app.service;
 
 import com.mystore.app.entity.Product;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
 
-    private Integer currentId = 1;
+    private final List<Product> productList = new ArrayList<>();
+    private final AtomicInteger idGenerator = new AtomicInteger(1);
 
-    private List<Product> products = new ArrayList<>(
-            Arrays.asList(
-                    new Product(currentId++, "Smartphone", "Electronics", 40000.00, 50),
-                    new Product(currentId++, "Laptop", "Electronics", 50000.00, 30),
-                    new Product(currentId++, "Wireless Headphones", "Electronics", 6000.00, 100),
-                    new Product(currentId++, "T-shirt", "Clothing", 999.00, 200),
-                    new Product(currentId++, "Jeans", "Clothing", 1499.00, 150),
-                    new Product(currentId++, "Leather Jacket", "Clothing", 3000.00, 75),
-                    new Product(currentId++, "Running Shoes", "Footwear", 499.00, 120),
-                    new Product(currentId++, "Sneakers", "Footwear", 599.00, 200),
-                    new Product(currentId++, "Office Chair", "Furniture", 2900.00, 40),
-                    new Product(currentId++, "Desk", "Furniture", 4000.00, 60),
-                    new Product(currentId++, "Blender", "Appliances", 200.00, 80),
-                    new Product(currentId++, "Microwave Oven", "Appliances", 4999.00, 50),
-                    new Product(currentId++, "Coffee Maker", "Appliances", 1399.00, 90),
-                    new Product(currentId++, "Smart Watch", "Electronics", 999.00, 150),
-                    new Product(currentId++, "Bluetooth Speaker", "Electronics", 2499.00, 250)
-            )
-    );
-
+    // Create a product
     public Product addProduct(Product product) {
-        product.setId(currentId++);
-        products.add(product);
+        product.setId(idGenerator.getAndIncrement());
+        productList.add(product);
         return product;
     }
 
+    // Get all products
     public List<Product> getAllProducts() {
-        return products;
+        return productList;
     }
 
-    public Product getProduct(Integer id) {
-        return findProductById(id);
+    // Get product by ID
+    public Optional<Product> getProductById(int id) {
+        return productList.stream()
+                .filter(p -> p.getId() == id)
+                .findFirst();
     }
 
-    public Product updateProduct(Integer id, Product product) {
-        Product p = findProductById(id);
-        if (p == null) return null;
-        p.setName(product.getName());
-        p.setPrice(product.getPrice());
-        p.setCategory(product.getCategory());
-        p.setStockQuantity(product.getStockQuantity());
-        return p;
+    // Update product
+    public Optional<Product> updateProduct(int id, Product updatedProduct) {
+        Optional<Product> optionalProduct = getProductById(id);
+        optionalProduct.ifPresent(product -> {
+            product.setName(updatedProduct.getName());
+            product.setCategory(updatedProduct.getCategory());
+            product.setPrice(updatedProduct.getPrice());
+            product.setStockQuantity(updatedProduct.getStockQuantity());
+        });
+        return optionalProduct;
     }
 
-    public String deleteProduct(Integer id) {
-        Product p = findProductById(id);
-        if (p == null) return "Product Not Found";
-        products.remove(p);
-        return "Product Deleted Successfully";
+    // Delete product
+    public boolean deleteProduct(int id) {
+        return productList.removeIf(p -> p.getId() == id);
     }
 
-    private Product findProductById(Integer id) {
-        for (Product p: products) {
-            if (p.getId().intValue() == id.intValue()) {
-                return p;
-            }
-        }
-        return null;
+    // Search by name (case-insensitive)
+    public List<Product> searchByName(String name) {
+        return productList.stream()
+                .filter(p -> p.getName().toLowerCase().contains(name.toLowerCase()))
+                .collect(Collectors.toList());
     }
 
-    // TODO: Method to search products by name
+    // Filter by category (case-insensitive)
+    public List<Product> filterByCategory(String category) {
+        return productList.stream()
+                .filter(p -> p.getCategory().equalsIgnoreCase(category))
+                .collect(Collectors.toList());
+    }
 
+    // Filter by price range
+    public List<Product> filterByPriceRange(double minPrice, double maxPrice) {
+        return productList.stream()
+                .filter(p -> p.getPrice() >= minPrice && p.getPrice() <= maxPrice)
+                .collect(Collectors.toList());
+    }
 
-    // TODO: Method to filter products by category
-
-
-    // TODO: Method to filter products by price range
-
-
-    // TODO: Method to filter products by stock quantity range
-
-    
+    // Filter by stock quantity range
+    public List<Product> filterByStockRange(int minStock, int maxStock) {
+        return productList.stream()
+                .filter(p -> p.getStockQuantity() >= minStock && p.getStockQuantity() <= maxStock)
+                .collect(Collectors.toList());
+    }
 }
